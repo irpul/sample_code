@@ -46,7 +46,7 @@ elseif( isset($_GET['callback']) && isset($_GET['irpul_token']) && $_GET['irpul_
 	$decrypted 		= url_decrypt( $irpul_token );
 	if($decrypted['status']){
 		parse_str($decrypted['data'], $ir_output);
-		$tran_id 	= $ir_output['tran_id'];
+		$trans_id 	= $ir_output['trans_id'];
 		$order_id 	= $ir_output['order_id'];
 		$amount 	= $ir_output['amount'];
 		$refcode	= $ir_output['refcode'];
@@ -55,7 +55,7 @@ elseif( isset($_GET['callback']) && isset($_GET['irpul_token']) && $_GET['irpul_
 		if($status == 'paid'){
 			$parameters = array	(
 				'method' 	    => 'verify',
-				'trans_id' 		=> $tran_id,	// Required
+				'trans_id' 		=> $trans_id,	// Required
 				'amount'	 	=> $amount		// Required
 			);
 			
@@ -143,7 +143,7 @@ function url_decrypt($string){
 	}
 	$decrypted = base64_decode($data);
 	
-	$check = array('tran_id','order_id','amount','refcode','status');
+	$check = array('trans_id','order_id','amount','refcode','status');
 	foreach($check as $str){
 		str_replace($str,'',$decrypted,$count);
 		if($count > 0){
