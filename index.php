@@ -2,8 +2,8 @@
 header('Content-Type: text/html; charset=utf-8');
 
 //توکن درگاه ایرپول
-$token = '8f90d8b359c6bd1a11973c7b3c2803bb';
-$test_mode = true;
+$token = '';
+$test_mode = false;
 
 ini_set("display_errors", 1);
 error_reporting(E_ALL); 
