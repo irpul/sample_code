@@ -2,8 +2,9 @@
 header('Content-Type: text/html; charset=utf-8');
 
 //توکن درگاه ایرپول
-$token = '';
-$test_mode = false;
+$token = '8f90d8b359c6bd1a11973c7b3c2803bb';
+$test_mode = true;
+$script_url = "http://127.0.0.1/GitHub/irpul/sample_code";
 
 ini_set("display_errors", 1);
 error_reporting(E_ALL); 
@@ -41,45 +42,45 @@ if(isset($_POST['start_pay'])){
 		echo 'پاسخی از سرویس دهنده دریافت نشد. لطفا دوباره تلاش نمائید';
 	}
 }
-elseif( isset($_GET['callback']) && isset($_GET['irpul_token']) && $_GET['irpul_token']!=''  ){ //تائید تراکنش
-	$irpul_token 	= $_GET['irpul_token'];
-	$decrypted 		= url_decrypt( $irpul_token );
-	if($decrypted['status']){
-		parse_str($decrypted['data'], $ir_output);
-		$trans_id 	= $ir_output['trans_id'];
-		$order_id 	= $ir_output['order_id'];
-		$amount 	= $ir_output['amount'];
-		$refcode	= $ir_output['refcode'];
-		$status 	= $ir_output['status'];
+elseif( isset($_GET['callback']) && isset($_POST['trans_id']) && isset($_POST['order_id']) && isset($_POST['amount']) && isset($_POST['refcode']) && isset($_POST['status']) ){ //تائید تراکنش
+	$trans_id 	= $_POST['trans_id'];
+	$order_id 	= $_POST['order_id'];
+	$amount 	= $_POST['amount'];
+	$refcode	= $_POST['refcode'];
+	$status 	= $_POST['status'];
+	
+	if($status == 'paid'){
+		$parameters = array	(
+			'method' 	    => 'verify',
+			'trans_id' 		=> $trans_id,	// Required
+			'amount'	 	=> $amount		// Required
+		);
 		
-		if($status == 'paid'){
-			$parameters = array	(
-				'method' 	    => 'verify',
-				'trans_id' 		=> $trans_id,	// Required
-				'amount'	 	=> $amount		// Required
-			);
-			
-			$result =  post_data('https://irpul.ir/ws.php', $parameters, $token );
+		$result =  post_data('https://irpul.ir/ws.php', $parameters, $token );
 
-			if( isset($result['http_code']) ){
-				$data =  json_decode($result['data'],true);
+		if( isset($result['http_code']) ){
+			$data =  json_decode($result['data'],true);
+			$irpul_amount  = $data['amount'];
 
-				if( isset($data['code']) && $data['code'] === 1){
+			if( isset($data['code']) && $data['code'] === 1){
+				if($amount == $irpul_amount){
 					echo "transaction paid. refcode :" .$refcode;
 				}
 				else{
-					echo 'خطا در پرداخت. کد خطا: ' . $data['code'] . '<br/>' . $data['status'];
-					echo "<br/><a href='http://irpul.ir/webservice/' target='_blank' >Help</a>";
+					$error_msg ='مبلغ تراکنش در ایرپول (' . number_format($irpul_amount) . ' تومان) تومان با مبلغ تراکنش ارسالی (' . number_format($amount) . ' تومان) برابر نیست';
 				}
-			}else{
-				echo 'پاسخی از سرویس دهنده دریافت نشد. لطفا دوباره تلاش نمائید';
+			}
+			else{
+				echo 'خطا در پرداخت. کد خطا: ' . $data['code'] . '<br/>' . $data['status'];
+				echo "<br/><a href='http://irpul.ir/webservice/' target='_blank' >Help</a>";
 			}
 		}else{
-			echo "تراکنش پرداخت نشده است";
+			echo 'پاسخی از سرویس دهنده دریافت نشد. لطفا دوباره تلاش نمائید';
 		}
 	}else{
-		echo "توکن اشتباه است";
+		echo "تراکنش پرداخت نشده است";
 	}
+
 }
 else{
 ?>
@@ -124,7 +125,7 @@ WebService:
 		</tr>
 		<tr>
 			<th>Callback URL</th>
-			<td><input type=" text" name="callback_url" value="http://127.0.0.1/sample_code/index.php?callback" /></td>
+			<td><input type=" text" name="callback_url" value="<?php echo $script_url; ?>/index.php?callback" /></td>
 		</tr>
 		<tr>
 			<th></th>
@@ -133,29 +134,6 @@ WebService:
 	</table>
 </form>
 <?php } 
-
-function url_decrypt($string){
-	$counter = 0;
-	$data = str_replace(array('-','_','.'),array('+','/','='),$string);
-	$mod4 = strlen($data) % 4;
-	if ($mod4) {
-	$data .= substr('====', $mod4);
-	}
-	$decrypted = base64_decode($data);
-	
-	$check = array('trans_id','order_id','amount','refcode','status');
-	foreach($check as $str){
-		str_replace($str,'',$decrypted,$count);
-		if($count > 0){
-			$counter++;
-		}
-	}
-	if($counter === 5){
-		return array('data'=>$decrypted , 'status'=>true);
-	}else{
-		return array('data'=>'' , 'status'=>false);
-	}
-}
 
 function post_data($url,$params,$token) {
 	ini_set('default_socket_timeout', 15);
@@ -219,8 +197,6 @@ function post_data($url,$params,$token) {
 	}
 	return $res;
 }
-
-
 ?>
 
 
